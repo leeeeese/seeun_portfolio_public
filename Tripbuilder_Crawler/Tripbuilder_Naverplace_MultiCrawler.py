@@ -66,6 +66,8 @@ class NaverPlaceUrlCollecter:
         for i, cd in enumerate(df['naverCode']):
             final_url = f'https://pcmap.place.naver.com/restaurant/{cd}/review/visitor#'
             df['naverURL'][i] = final_url
+            final_url_2 = f'https://pcmap.place.naver.com/restaurant/{cd}/review/ugc'
+            df['naverBlogURL'][i] = final_url_2
 
         return df
 
@@ -159,6 +161,7 @@ class NaverPlaceReviewCollector():
         return rev
 
     def BlogReviewUrlCollector(df):
+
         count = 0
         current = 0
         goal = len(df['name'])
@@ -170,19 +173,9 @@ class NaverPlaceReviewCollector():
             current += 1
             print('진행상황 : ', current, '/', goal, sep="")
 
-            driver.get(df['naverURL'][i])
+            driver.get(df['naverBlogURL'][i])
             time.sleep(2)
             print('현재 수집중인 식당 : ', df['name'][i])
-
-            try:
-                target_element = driver.find_element(
-                    By.CSS_SELECTOR, '#app-root > div > div > div > div:nth-child(6) > div.jGeXd > div > a:nth-child(2)')
-                driver.execute_script(
-                    "arguments[0].setAttribute('aria-selected', 'true')", target_element)
-                target_element.click()
-
-            except NoSuchElementException:
-                break
 
             while True:
                 try:
@@ -247,8 +240,56 @@ class NaverPlaceReviewCollector():
         return rev
 
     def InfoCrawler():
-        # 추후에 추가 예정
-        pass
+        count = 0
+        current = 0
+        goal = len(df['name'])
+
+        info_lst = []
+
+        for i in range(goal):
+
+            current += 1
+            print('진행상황: ', current, '/', goal, sep="")
+
+            driver.get(df['naverURL'][i])
+            thisurl = df['naverURL'][i]
+            time.sleep(2)
+            print('현재 수집중인 식당: ', df['name'][i])
+
+            try:
+                try:
+                    time.sleep(2)
+                    more = driver.find_element(
+                        By.CSS_SELECTOR, "#app-root > div > div > div > div:nth-child(5) > div > div:nth-child(2) > div.place_section_content > div > div.O8qbU.pSavy > div > a > div > div")
+                    time.sleep(1)
+                    more_button = more.find_element(
+                        By.CSS_SELECTOR, "#app-root > div > div > div > div:nth-child(5) > div > div:nth-child(2) > div.place_section_content > div > div.O8qbU.pSavy > div > a > div > div > span")
+                    time.sleep(1)
+                    more.click()
+
+                except:
+                    pass
+
+                titles = driver.find_element(
+                    By.CSS_SELECTOR, "#app-root > div > div > div > div.place_section.no_margin.OP4V8 > div.zD5Nm.undefined")
+                title_text = titles.text
+                time.sleep(3)
+                target_element = driver.find_element(
+                    By.CSS_SELECTOR, '#app-root > div > div > div > div:nth-child(5) > div > div:nth-child(2) > div.place_section_content > div')
+                text_content = target_element.text
+                time.sleep(1)
+
+                info_lst.append([df['name'][i], title_text, text_content])
+
+            except Exception as e:
+                print(f"에러 발생: {e}")
+
+        column = ["name", "title_lst", "info_lst"]
+        res = pd.DataFrame(info_lst, columns=column)
+
+        # res 전처리 필요
+
+        return res
 
 
 class DataPreprocessing():
